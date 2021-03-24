@@ -9,9 +9,11 @@ import {
   Animated,
 } from 'react-native';
 import RNSketchCanvas from '@terrylinla/react-native-sketch-canvas';
-
+import RNFS from 'react-native-fs';
 import {Dimensions} from 'react-native';
 import axios from 'axios';
+import {BarChart, LineChart} from 'react-native-chart-kit';
+
 // import RNFS from "react-native-fs"
 
 export default class SizeDraw extends Component {
@@ -19,19 +21,31 @@ export default class SizeDraw extends Component {
     imageFile: '',
     time: 10,
     visible: 0,
+
+    data: {
+      labels: [],
+      datasets: [
+        {
+          data: [],
+        },
+      ],
+    },
   };
 
   time = () => {
     const counter = setInterval(() => {
       const {time} = this.state;
+
       if (time === 0) {
+        console.log('deneme');
         this.canvas.save();
 
         this.canvas.clear();
+
         this.setState({
           time: 10,
-          visible: 0,
         });
+
         clearInterval(counter);
       } else {
         this.setState(prevState => {
@@ -43,8 +57,52 @@ export default class SizeDraw extends Component {
     }, 1000);
   };
 
-  uploadImage = path => {
-    // upload işlemleri burada yapılacak
+  uploadImage = async path => {
+    let filePath = String('');
+    let fileName = String('');
+
+    String(path)
+      .split('/')
+      .map((value, index, array) => {
+        if (array.length - 1 == index) {
+          fileName = value;
+        } else if (value === '') {
+        } else {
+          filePath = filePath + '/' + value;
+        }
+      });
+    filePath = 'file://' + filePath + '/resize_' + fileName;
+    const img = await RNFS.readFile(filePath, 'base64').then(response => {
+      console.log(response);
+      axios
+        .post('http://192.168.0.26:3005/upload/', {
+          file_img: response,
+        })
+        .then(response => {
+          console.log(response);
+          let labels = [];
+          let datasets = [
+            {
+              data: [],
+            },
+          ];
+          if (response.data != null) {
+            response.data.map(value => {
+              labels.push(value.name);
+              datasets[0].data.push(value.percent);
+            });
+            this.setState({
+              data: {
+                labels,
+                datasets,
+              },
+            });
+          }
+        })
+        .catch(err => {
+          console.log(err);
+        });
+    });
   };
   render() {
     const {height, width} = Dimensions.get('window');
@@ -72,8 +130,12 @@ export default class SizeDraw extends Component {
                 this.canvas = ref;
               }}
               onSketchSaved={(success, path) => {
+                console.log(success);
                 if (success) {
                   this.uploadImage(path);
+                  this.setState({
+                    visible: 0,
+                  });
                 }
               }}
               savePreference={() => {
@@ -96,7 +158,33 @@ export default class SizeDraw extends Component {
               height: width,
               width: width,
               backgroundColor: 'white',
-            }}></View>
+            }}>
+            {this.state.data.labels.length != 0 ? (
+              <BarChart
+                data={this.state.data}
+                fromZero={true}
+                width={width}
+                // showBarTops={true}
+                // showValuesOnTopOfBars={true}
+                withInnerLines={false}
+                showBarTops={true}
+                showValuesOnTopOfBars={true}
+                height={Dimensions.get('window').width}
+                yAxisLabel="% "
+                chartConfig={{
+                  backgroundGradientFrom: '#fff',
+
+                  backgroundGradientTo: '#fff',
+
+                  color: (opacity = 1) => `rgba(0, 0, 0,1)`,
+                  labelColor: () => `rgb(34, 139, 34)`,
+                  strokeWidth: 20, // optional, default 3
+                  barPercentage: 1,
+                  useShadowColorFromDataset: false, // optional
+                }}
+              />
+            ) : null}
+          </View>
         )}
         <View
           style={{
@@ -109,9 +197,9 @@ export default class SizeDraw extends Component {
           <View style={{marginBottom: 6}}>
             <TouchableOpacity
               onPress={() => {
-                if (this.state.time === 10) {
+                if (this.state.time === 10 && this.state.visible === 0) {
                   this.setState({
-                    time: 10,
+                    time: 2,
                     visible: 1,
                   });
 
