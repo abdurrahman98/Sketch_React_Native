@@ -72,12 +72,22 @@ export default class SizeDraw extends Component {
         }
       });
     filePath = 'file://' + filePath + '/resize_' + fileName;
-    const img = await RNFS.readFile(filePath, 'base64').then(response => {
+    const img = await RNFS.readFile(filePath, 'ascii').then(response => {
+      const config = {
+        header: {
+          Accept: 'application/json',
+          'Content-type': 'multipart/form-data',
+        },
+      };
       console.log(response);
       axios
-        .post('http://192.168.0.26:3005/upload/', {
-          file_img: response,
-        })
+        .post(
+          'http://192.168.0.26:3005/upload/',
+          {
+            file_img: response,
+          },
+          config,
+        )
         .then(response => {
           console.log(response);
           let labels = [];
