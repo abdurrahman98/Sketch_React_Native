@@ -9,10 +9,10 @@ import {
   Animated,
 } from 'react-native';
 import RNSketchCanvas from '@terrylinla/react-native-sketch-canvas';
-import RNFS from 'react-native-fs';
 import {Dimensions} from 'react-native';
 import axios from 'axios';
-import {BarChart, LineChart} from 'react-native-chart-kit';
+import {BarChart} from 'react-native-chart-kit';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 // import RNFS from "react-native-fs"
 
@@ -21,6 +21,8 @@ export default class SizeDraw extends Component {
     imageFile: '',
     time: 10,
     visible: 0,
+    imageType: '',
+    buttonVisible: 1,
 
     data: {
       labels: [],
@@ -32,12 +34,15 @@ export default class SizeDraw extends Component {
     },
   };
 
+  componentDidMount() {
+    console.log(this.props);
+  }
+
   time = () => {
     const counter = setInterval(() => {
       const {time} = this.state;
 
       if (time === 0) {
-        console.log('deneme');
         this.canvas.save();
 
         this.canvas.clear();
@@ -45,6 +50,12 @@ export default class SizeDraw extends Component {
         this.setState({
           time: 10,
         });
+        setTimeout(() => {
+          this.setState({
+            visible: 0,
+            buttonVisible: 2,
+          });
+        }, 1000);
 
         clearInterval(counter);
       } else {
@@ -57,7 +68,7 @@ export default class SizeDraw extends Component {
     }, 1000);
   };
 
-  uploadImage = async path => {
+  uploadImage = path => {
     let filePath = String('');
     let fileName = String('');
 
@@ -72,47 +83,26 @@ export default class SizeDraw extends Component {
         }
       });
     filePath = 'file://' + filePath + '/resize_' + fileName;
-    const img = await RNFS.readFile(filePath, 'ascii').then(response => {
-      const config = {
-        header: {
-          Accept: 'application/json',
-          'Content-type': 'multipart/form-data',
-        },
-      };
-      console.log(response);
-      axios
-        .post(
-          'http://192.168.0.26:3005/upload/',
-          {
-            file_img: response,
-          },
-          config,
-        )
-        .then(response => {
-          console.log(response);
-          let labels = [];
-          let datasets = [
-            {
-              data: [],
-            },
-          ];
-          if (response.data != null) {
-            response.data.map(value => {
-              labels.push(value.name);
-              datasets[0].data.push(value.percent);
-            });
-            this.setState({
-              data: {
-                labels,
-                datasets,
-              },
-            });
-          }
-        })
-        .catch(err => {
-          console.log(err);
-        });
+    console.log(filePath);
+    var formdata = new FormData();
+    formdata.append('file_img', {
+      uri: filePath,
+      type: 'image/png',
+      name: 'resize_' + fileName,
     });
+
+    axios
+      .post('http://192.168.1.103:8000/upload/', formdata)
+      .then(response => {
+        this.setState({
+          imageType: response.data,
+        });
+      })
+      .catch(err => {
+        this.setState({
+          imageType: 'bilinmeyen bir hata oluştu',
+        });
+      });
   };
   render() {
     const {height, width} = Dimensions.get('window');
@@ -133,7 +123,7 @@ export default class SizeDraw extends Component {
         {this.state.visible === 1 ? (
           <View style={{height: width, width: width}}>
             <RNSketchCanvas
-              containerStyle={{backgroundColor: 'transparent', flex: 1}}
+              containerStyle={{backgroundColor: '#ffffff', flex: 1}}
               canvasStyle={{backgroundColor: '#ffffff', flex: 1}}
               defaultStrokeWidth={12}
               ref={ref => {
@@ -143,9 +133,6 @@ export default class SizeDraw extends Component {
                 console.log(success);
                 if (success) {
                   this.uploadImage(path);
-                  this.setState({
-                    visible: 0,
-                  });
                 }
               }}
               savePreference={() => {
@@ -156,7 +143,7 @@ export default class SizeDraw extends Component {
                 return {
                   folder: 'RNSketchCanvas',
                   filename: filename,
-                  transparent: true,
+                  transparent: false,
                   imageType: 'png',
                 };
               }}
@@ -168,31 +155,12 @@ export default class SizeDraw extends Component {
               height: width,
               width: width,
               backgroundColor: 'white',
+              justifyContent: 'center',
+              alignItems: 'center',
             }}>
-            {this.state.data.labels.length != 0 ? (
-              <BarChart
-                data={this.state.data}
-                fromZero={true}
-                width={width}
-                // showBarTops={true}
-                // showValuesOnTopOfBars={true}
-                withInnerLines={false}
-                showBarTops={true}
-                showValuesOnTopOfBars={true}
-                height={Dimensions.get('window').width}
-                yAxisLabel="% "
-                chartConfig={{
-                  backgroundGradientFrom: '#fff',
-
-                  backgroundGradientTo: '#fff',
-
-                  color: (opacity = 1) => `rgba(0, 0, 0,1)`,
-                  labelColor: () => `rgb(34, 139, 34)`,
-                  strokeWidth: 20, // optional, default 3
-                  barPercentage: 1,
-                  useShadowColorFromDataset: false, // optional
-                }}
-              />
+            <Text style={{marginBottom: 8}}>{this.state.imageType}</Text>
+            {this.state.imageType != '' ? (
+              <Text>Tahminimiz Doğru mu?</Text>
             ) : null}
           </View>
         )}
@@ -204,20 +172,64 @@ export default class SizeDraw extends Component {
             justifyContent: 'center',
             backgroundColor: '#1DB700',
           }}>
-          <View style={{marginBottom: 6}}>
-            <TouchableOpacity
-              onPress={() => {
-                if (this.state.time === 10 && this.state.visible === 0) {
-                  this.setState({
-                    time: 2,
-                    visible: 1,
-                  });
+          <View>
+            {this.state.buttonVisible === 1 ? (
+              <TouchableOpacity
+                onPress={() => {
+                  if (this.state.time === 10 && this.state.visible === 0) {
+                    this.setState({
+                      visible: 1,
+                      imageType: '',
+                    });
 
-                  this.time();
-                }
-              }}>
-              <Text style={{fontSize: 20}}>Başlat</Text>
-            </TouchableOpacity>
+                    this.time();
+                  }
+                }}>
+                <Text style={{fontSize: 20}}>Başlat</Text>
+              </TouchableOpacity>
+            ) : null}
+            {this.state.buttonVisible === 2 ? (
+              <View style={{flexDirection: 'row'}}>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (this.state.time === 10 && this.state.visible === 0) {
+                      this.setState({
+                        visible: 1,
+                        imageType: '',
+                        buttonVisible: null,
+                      });
+
+                      this.time();
+                    }
+                  }}>
+                  <Icon
+                    name={'close-outline'}
+                    size={50}
+                    type="Ionicons"
+                    style={{
+                      color: 'black',
+                      fontWeight: 'bold',
+                    }}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    console.log(this.props);
+                    this.props.navigation.goBack();
+                  }}
+                  style={{marginLeft: 80}}>
+                  <Icon
+                    name={'checkmark-outline'}
+                    size={50}
+                    type="Ionicons"
+                    style={{
+                      color: 'black',
+                      fontWeight: 'bold',
+                    }}
+                  />
+                </TouchableOpacity>
+              </View>
+            ) : null}
           </View>
         </View>
       </View>
