@@ -7,6 +7,7 @@ import {
   Image,
   TouchableOpacity,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import RNSketchCanvas from '@terrylinla/react-native-sketch-canvas';
 import {Dimensions} from 'react-native';
@@ -23,6 +24,7 @@ export default class SizeDraw extends Component {
     visible: 0,
     imageType: '',
     buttonVisible: 1,
+    loading: false,
 
     data: {
       labels: [],
@@ -69,6 +71,9 @@ export default class SizeDraw extends Component {
   };
 
   uploadImage = path => {
+    this.setState({
+      loading: true,
+    });
     let filePath = String('');
     let fileName = String('');
 
@@ -90,17 +95,21 @@ export default class SizeDraw extends Component {
       type: 'image/png',
       name: 'resize_' + fileName,
     });
+    const httpClient = axios.create();
+    httpClient.defaults.timeout = 1000;
 
-    axios
-      .post('http://192.168.1.103:8000/upload/', formdata)
+    httpClient
+      .post('http://192.168.0.26:8080/upload/', formdata)
       .then(response => {
         this.setState({
           imageType: response.data,
+          loading: false,
         });
       })
       .catch(err => {
         this.setState({
           imageType: 'bilinmeyen bir hata oluştu',
+          loading: false,
         });
       });
   };
@@ -164,6 +173,7 @@ export default class SizeDraw extends Component {
             ) : null}
           </View>
         )}
+
         <View
           style={{
             height: height - (width + 24 + 50),
@@ -188,6 +198,7 @@ export default class SizeDraw extends Component {
                 <Text style={{fontSize: 20}}>Başlat</Text>
               </TouchableOpacity>
             ) : null}
+
             {this.state.buttonVisible === 2 ? (
               <View style={{flexDirection: 'row'}}>
                 <TouchableOpacity

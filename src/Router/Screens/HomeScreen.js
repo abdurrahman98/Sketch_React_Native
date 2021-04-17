@@ -1,18 +1,46 @@
 import React, {Component} from 'react';
-import {Button, Text, View, StyleSheet} from 'react-native';
+import {Button, Text, View, StyleSheet, Image} from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome5';
 
 class HomeScreen extends Component {
   data = [
-    'Uçak',
-    'Elma',
-    'Kuş',
-    'Traktör',
-    'Araba',
-    'Kedi',
-    'Köpek',
-    'Donut',
-    'Çiçek',
-    'At',
+    {
+      name: 'Uçak',
+      iconName: 'plane',
+    },
+    {
+      name: 'Elma',
+      iconName: 'apple-alt',
+    },
+    {
+      name: 'Kuş',
+      iconName: 'dove',
+    },
+    {
+      name: 'Traktör',
+      iconName: 'tractor',
+    },
+    {
+      name: 'Araba',
+      iconName: 'car',
+    },
+    {
+      name: 'Kedi',
+      iconName: 'cat',
+    },
+    {
+      name: 'Köpek',
+      iconName: 'dog',
+    },
+
+    {
+      name: 'At',
+      iconName: 'horse',
+    },
+    {
+      name: 'Çiçek',
+      iconName: 'leaf',
+    },
   ];
   render() {
     return (
@@ -22,11 +50,32 @@ class HomeScreen extends Component {
         </Text>
         {this.data.map((value, index) => {
           return (
-            <Text style={{marginTop: 3, fontWeight: 'bold'}} key={index}>
-              {value}
-            </Text>
+            <View key={index} style={{marginTop: 7}}>
+              <View style={{flexDirection: 'row'}}>
+                <Icon
+                  name={value.iconName}
+                  size={20}
+                  type="FontAwesome5"
+                  style={{
+                    marginRight: 12,
+                    color: 'black',
+                    fontWeight: 'bold',
+                  }}
+                />
+                <Text style={{fontWeight: 'bold'}}>{value.name}</Text>
+              </View>
+            </View>
           );
         })}
+        <View>
+          <View style={{flexDirection: 'row', marginTop: 7}}>
+            <Image
+              style={{marginRight: 12}}
+              source={require('../../assets/Icon/donut.png')}
+            />
+            <Text style={{marginTop: 3, fontWeight: 'bold'}}>Donut</Text>
+          </View>
+        </View>
         <View style={{marginTop: 50}}>
           <Button
             style={{marginTop: 20}}
@@ -34,7 +83,7 @@ class HomeScreen extends Component {
               console.log(this.props);
               this.props.navigation.navigate('DrawingScreen');
             }}
-            title="Başlat"></Button>
+            title="Devam et"></Button>
         </View>
       </View>
     );
